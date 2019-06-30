@@ -99,7 +99,6 @@ static void mqtt_client_start(void)
     sprintf(mqttinfo.lwt_topic, "csro/%s/%s/available", sysinfo.mac_str, sysinfo.dev_type);
     sprintf(mqttinfo.uri, "mqtt://%s", mqttinfo.broker);
 
-    //esp_mqtt_client_destroy(mqttclient);
     esp_mqtt_client_config_t mqtt_cfg = {
         .event_handle = mqtt_event_handler,
         .client_id = mqttinfo.id,
