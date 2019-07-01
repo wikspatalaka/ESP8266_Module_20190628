@@ -90,7 +90,7 @@ extern csro_mqtt mqttinfo;
 extern esp_mqtt_client_handle_t mqttclient;
 
 //common.c
-void csro_system_get_info(void);
+void prepare_mqtt_client_info(void);
 
 //csro_start_config.c
 void csro_start_smart_config(void);

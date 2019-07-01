@@ -4,6 +4,9 @@
         "PLATFORMIO_CALLER": "vscode"
     },
     "files.associations": {
-        "csro_common.h": "c"
+        "csro_common.h": "c",
+        "sntp.h": "c",
+        "functional": "c",
+        "system_error": "c"
     }
 }
