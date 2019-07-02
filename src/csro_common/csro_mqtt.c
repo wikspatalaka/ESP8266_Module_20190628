@@ -1,6 +1,7 @@
 #include "csro_common.h"
+#include "csro_device/csro_devices.h"
 
-static void timer_task(void *args)
+static void time_stamp_task(void *args)
 {
     static int count = 0;
     while (true)
@@ -30,15 +31,11 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 {
     if (event->event_id == MQTT_EVENT_CONNECTED)
     {
-        printf("MQTT Connected.\r\n");
+        csro_device_on_connect(event);
     }
     else if (event->event_id == MQTT_EVENT_DATA)
     {
-        printf("MQTT Got Message.\r\n");
-    }
-    else if (event->event_id == MQTT_EVENT_DISCONNECTED)
-    {
-        printf("MQTT Disconnected.\r\n");
+        csro_device_on_message(event);
     }
     return ESP_OK;
 }
@@ -80,29 +77,7 @@ static void udp_receive_mqtt_server(void)
             {
                 strcpy((char *)mqttinfo.broker, (char *)server->valuestring);
                 sprintf(mqttinfo.uri, "mqtt://%s", mqttinfo.broker);
-                if (mqttclient != NULL)
-                {
-                    esp_mqtt_client_destroy(mqttclient);
-                }
-                esp_mqtt_client_config_t mqtt_cfg = {
-                    .event_handle = mqtt_event_handler,
-                    .client_id = mqttinfo.id,
-                    .username = mqttinfo.name,
-                    .password = mqttinfo.pass,
-                    .uri = mqttinfo.uri,
-                    .keepalive = 60,
-                    .lwt_topic = mqttinfo.lwt_topic,
-                    .lwt_msg = "offline",
-                    .lwt_retain = 1,
-                    .lwt_qos = 1,
-                };
-                mqttclient = esp_mqtt_client_init(&mqtt_cfg);
-                esp_mqtt_client_start(mqttclient);
-            }
-            else
-            {
-                strcpy((char *)mqttinfo.broker, "derekiot.win");
-                sprintf(mqttinfo.uri, "mqtt://%s", mqttinfo.broker);
+                printf("%s\r\n", mqttinfo.uri);
                 if (mqttclient != NULL)
                 {
                     esp_mqtt_client_destroy(mqttclient);
@@ -127,7 +102,7 @@ static void udp_receive_mqtt_server(void)
     cJSON_Delete(json);
 }
 
-static void udp_task(void *args)
+static void udp_server_task(void *args)
 {
     while (true)
     {
@@ -166,10 +141,10 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 
 void csro_start_mqtt(void)
 {
-    xTaskCreate(timer_task, "timer_task", 2048, NULL, configMAX_PRIORITIES - 10, NULL);
-    xTaskCreate(udp_task, "udp_task", 2048, NULL, configMAX_PRIORITIES - 5, NULL);
+    xTaskCreate(time_stamp_task, "time_stamp_task", 2048, NULL, configMAX_PRIORITIES - 10, NULL);
+    xTaskCreate(udp_server_task, "udp_server_task", 2048, NULL, configMAX_PRIORITIES - 7, NULL);
 
-    prepare_mqtt_client_info();
+    csro_mqtt_client_info();
     tcpip_adapter_init();
     esp_event_loop_init(wifi_event_handler, NULL);
 

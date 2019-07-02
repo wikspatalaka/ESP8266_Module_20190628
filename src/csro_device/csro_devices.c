@@ -15,18 +15,18 @@ void csro_device_init(void)
 #endif
 }
 
-void csro_device_on_connect(esp_mqtt_client_handle_t client)
+void csro_device_on_connect(esp_mqtt_event_handle_t event)
 {
 #ifdef NLIGHT
-    csro_nlight_on_connect(client);
+    csro_nlight_on_connect(event);
 #elif defined DLIGHT
-    csro_dlight_on_connect(client);
+    csro_dlight_on_connect(event);
 #elif defined RGBLIGHT
-    csro_rgblight_on_connect(client);
+    csro_rgblight_on_connect(event);
 #elif defined MOTOR
-    csro_motor_on_connect(client);
+    csro_motor_on_connect(event);
 #elif defined AIR_MONITOR
-    csro_airmon_on_connect(client);
+    csro_airmon_on_connect(event);
 #endif
 }
 

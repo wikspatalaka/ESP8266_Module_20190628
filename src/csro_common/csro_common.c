@@ -5,7 +5,7 @@ csro_system sysinfo;
 csro_mqtt mqttinfo;
 esp_mqtt_client_handle_t mqttclient;
 
-void prepare_mqtt_client_info(void)
+void csro_mqtt_client_info(void)
 {
 #ifdef NLIGHT
     sprintf(sysinfo.dev_type, "nlight%d", NLIGHT);
@@ -28,14 +28,16 @@ void prepare_mqtt_client_info(void)
     nvs_get_str(handle, "router_pass", sysinfo.router_pass, &len);
     nvs_close(handle);
 
-    esp_wifi_get_mac(WIFI_MODE_STA, sysinfo.mac);
-    sprintf(sysinfo.mac_str, "%02x%02x%02x%02x%02x%02x", sysinfo.mac[0], sysinfo.mac[1], sysinfo.mac[2], sysinfo.mac[3], sysinfo.mac[4], sysinfo.mac[5]);
+    uint8_t mac[6];
+
+    esp_wifi_get_mac(WIFI_MODE_STA, mac);
+    sprintf(sysinfo.mac_str, "%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     sprintf(sysinfo.host_name, "CSRO_%s", sysinfo.mac_str);
 
     sprintf(mqttinfo.lwt_topic, "csro/%s/%s/available", sysinfo.mac_str, sysinfo.dev_type);
     sprintf(mqttinfo.id, "csro/%s", sysinfo.mac_str);
     sprintf(mqttinfo.name, "csro/%s/%s", sysinfo.dev_type, sysinfo.mac_str);
-    sprintf(mqttinfo.pass, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", sysinfo.mac[1], sysinfo.mac[3], sysinfo.mac[5], sysinfo.mac[0], sysinfo.mac[2], sysinfo.mac[4], sysinfo.mac[5], sysinfo.mac[3], sysinfo.mac[1], sysinfo.mac[4], sysinfo.mac[2], sysinfo.mac[0]);
+    sprintf(mqttinfo.pass, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", mac[1], mac[3], mac[5], mac[0], mac[2], mac[4], mac[5], mac[3], mac[1], mac[4], mac[2], mac[0]);
     printf("\r\nid = %s.\nname = %s.\npass = %s.\r\nssid = %s.\r\npass = %s.\r\n", mqttinfo.id, mqttinfo.name, mqttinfo.pass, sysinfo.router_ssid, sysinfo.router_pass);
 }
 

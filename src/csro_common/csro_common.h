@@ -20,7 +20,7 @@
 #include "time.h"
 #include "cJSON.h"
 
-#define AIR_MONITOR
+#define NLIGHT 3
 /* 
 #define NLIGHT 1
 #define DLIGHT 1
@@ -90,7 +90,7 @@ extern csro_mqtt mqttinfo;
 extern esp_mqtt_client_handle_t mqttclient;
 
 //common.c
-void prepare_mqtt_client_info(void);
+void csro_mqtt_client_info(void);
 
 //csro_start_config.c
 void csro_start_smart_config(void);

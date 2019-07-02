@@ -29,7 +29,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 {
     if (event->event_id == SYSTEM_EVENT_STA_START)
     {
-        esp_smartconfig_set_type(SC_TYPE_ESPTOUCH_AIRKISS);
+        esp_smartconfig_set_type(SC_TYPE_AIRKISS);
         esp_smartconfig_start(smartconfig_callback);
     }
     else if (event->event_id == SYSTEM_EVENT_STA_DISCONNECTED)

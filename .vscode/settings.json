@@ -7,6 +7,7 @@
         "csro_common.h": "c",
         "sntp.h": "c",
         "functional": "c",
-        "system_error": "c"
+        "system_error": "c",
+        "csro_devices.h": "c"
     }
 }
