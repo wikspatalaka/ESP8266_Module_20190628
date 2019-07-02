@@ -3,26 +3,11 @@
 
 static void time_stamp_task(void *args)
 {
-    static int count = 0;
     while (true)
     {
-        vTaskDelay(1000 / portTICK_RATE_MS);
-        time(&sysinfo.time_now);
-        localtime_r(&sysinfo.time_now, &sysinfo.time_info);
-        strftime(sysinfo.time_str, sizeof(sysinfo.time_str), "%Y-%m-%d %H:%M:%S", &sysinfo.time_info);
-        if (sysinfo.time_info.tm_year < (2018 - 1900))
-        {
-            count++;
-        }
-        else
-        {
-            if (sysinfo.time_sync == false)
-            {
-                sysinfo.time_start = sysinfo.time_now - count;
-                sysinfo.time_sync = true;
-            }
-        }
-        printf("Free heap: %d, time is: %s, run %d seconds\n", esp_get_free_heap_size(), sysinfo.time_str, (int)(sysinfo.time_now - sysinfo.time_start));
+        sysinfo.time_run++;
+        printf("Run %d mins. Free heap is %d\r\n", sysinfo.time_run, esp_get_free_heap_size());
+        vTaskDelay(60000 / portTICK_RATE_MS);
     }
     vTaskDelete(NULL);
 }
@@ -106,8 +91,8 @@ static void udp_server_task(void *args)
 {
     while (true)
     {
-        vTaskDelay(1000 / portTICK_RATE_MS);
         udp_receive_mqtt_server();
+        vTaskDelay(60000 / portTICK_RATE_MS);
     }
     vTaskDelete(NULL);
 }
@@ -122,11 +107,6 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
     }
     else if (event->event_id == SYSTEM_EVENT_STA_GOT_IP)
     {
-        sntp_setoperatingmode(SNTP_OPMODE_POLL);
-        sntp_setservername(0, "pool.ntp.org");
-        sntp_init();
-        setenv("TZ", "CST-8", 1);
-        tzset();
     }
     else if (event->event_id == SYSTEM_EVENT_STA_DISCONNECTED)
     {

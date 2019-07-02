@@ -31,8 +31,7 @@ void csro_update_nlight_state(void)
 {
     cJSON *state_json = cJSON_CreateObject();
     cJSON_AddItemToObject(state_json, "state", cJSON_CreateIntArray(light_state, 3));
-    cJSON_AddStringToObject(state_json, "time", sysinfo.time_str);
-    cJSON_AddNumberToObject(state_json, "run", (int)(sysinfo.time_now - sysinfo.time_start));
+    cJSON_AddNumberToObject(state_json, "run", sysinfo.time_run);
     char *out = cJSON_PrintUnformatted(state_json);
     strcpy(mqttinfo.content, out);
     free(out);

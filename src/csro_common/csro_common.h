@@ -20,7 +20,7 @@
 #include "time.h"
 #include "cJSON.h"
 
-#define NLIGHT 3
+#define AIR_MONITOR
 /* 
 #define NLIGHT 1
 #define DLIGHT 1
@@ -62,6 +62,7 @@ typedef struct
     uint8_t time_sync;
     time_t time_start;
     time_t time_now;
+    int time_run;
     struct tm time_info;
     char time_str[64];
 } csro_system;
