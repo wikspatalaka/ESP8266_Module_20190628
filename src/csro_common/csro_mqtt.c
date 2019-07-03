@@ -5,9 +5,9 @@ static void time_stamp_task(void *args)
 {
     while (true)
     {
-        sysinfo.time_run++;
         printf("Run %d mins. Free heap is %d\r\n", sysinfo.time_run, esp_get_free_heap_size());
         vTaskDelay(60000 / portTICK_RATE_MS);
+        sysinfo.time_run++;
     }
     vTaskDelete(NULL);
 }

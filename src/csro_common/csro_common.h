@@ -9,6 +9,7 @@
 #include "event_groups.h"
 #include "nvs_flash.h"
 #include "FreeRTOS.h"
+#include "semphr.h"
 
 #include "i2c.h"
 #include "gpio.h"
