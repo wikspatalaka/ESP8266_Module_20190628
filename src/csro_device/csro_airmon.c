@@ -14,32 +14,48 @@
 #define BTN_PIN 0
 #define AVE_COUNT 5
 
-typedef enum
-{
-    PURPLE = 0,  //red=128, green=0; 	blue=128;
-    RED,         //red=255, green=0; 	blue=0;
-    ORANGE,      //red=255, green=102; 	blue=0;
-    YELLOW,      //red=255, green=255; 	blue=0;
-    GREENYELLOW, //red=173, green=255; 	blue=47;
-    GREEN,       //red=0,   green=255; 	blue=0;
-    WHITE        //red=128, green=128; 	blue=128;
-} rgb_color;
+#define BLUE 0, 0, 255
+#define GREEN 0, 255, 0
+#define GREENYELLOW 173, 255, 47
+#define YELLOW 255, 255, 0
+#define ORANGE 255, 102, 0
+#define RED 255, 0, 0
+
+// typedef enum
+// {
+//     BLUE = 0,    //red=0,   green=0; 	blue=255;
+//     GREEN,       //red=0,   green=255; 	blue=0;
+//     GREENYELLOW, //red=173, green=255; 	blue=47;
+//     YELLOW,      //red=255, green=255; 	blue=0;
+//     ORANGE,      //red=255, green=102; 	blue=0;
+//     RED,         //red=255, green=0; 	blue=0;
+// } rgb_color;
 
 typedef struct
 {
-    uint32_t pm1_atm[AVE_COUNT + 1], pm2_atm[AVE_COUNT + 1], pm10_atm[AVE_COUNT + 1];
-    float hcho[AVE_COUNT + 1], temp[AVE_COUNT + 1], humi[AVE_COUNT + 1];
+    uint32_t pm1_atm[AVE_COUNT + 1];
+    uint32_t pm2_atm[AVE_COUNT + 1];
+    uint32_t pm10_atm[AVE_COUNT + 1];
+    float hcho[AVE_COUNT + 1];
+    float temp[AVE_COUNT + 1];
+    float humi[AVE_COUNT + 1];
 } pms_data;
 
 static char *itemlist[6] = {"temp", "humi", "hcho", "pm1", "pm2d5", "pm10"};
 static char *unitlist[6] = {"°C", "\%", "mg/m^3", "ug/m^3", "ug/m^3", "ug/m^3"};
 static char *iconlist[6] = {"mdi:thermometer-lines", "mdi:water-percent", "mdi:alien", "mdi:blur", "mdi:blur", "mdi:blur"};
+
+static uint8_t color[6][3] = {{BLUE}, {GREEN}, {GREENYELLOW}, {YELLOW}, {ORANGE}, {RED}};
 static uint8_t roundlist[6] = {1, 1, 3, 0, 0, 0};
+static uint8_t pm_array[5] = {35, 75, 115, 150, 250};
+static float hchi_array[5] = {0.05, 0.1, 0.2, 0.5, 0.8};
+
 static QueueHandle_t uart0_queue;
 static xSemaphoreHandle pub_sem;
 static pms_data pms;
+static uint8_t aqi_index = 0;
 
-static void publish_task(void *arg)
+static void receive_sensor_values_task(void *arg)
 {
     while (true)
     {
@@ -66,7 +82,20 @@ static void publish_task(void *arg)
             pms.hcho[AVE_COUNT] = pms.hcho[AVE_COUNT] / AVE_COUNT;
             pms.temp[AVE_COUNT] = pms.temp[AVE_COUNT] / AVE_COUNT;
             pms.humi[AVE_COUNT] = pms.humi[AVE_COUNT] / AVE_COUNT;
-            printf("pm1 = %d, pm2 = %d, pm10 = %d, hcho = %4.f, temp = %2.f, humi = %2.f\r\n", pms.pm1_atm[AVE_COUNT], pms.pm2_atm[AVE_COUNT], pms.pm10_atm[AVE_COUNT], pms.hcho[AVE_COUNT], pms.temp[AVE_COUNT], pms.humi[AVE_COUNT]);
+
+            uint8_t aqi_temp = 0;
+            for (size_t i = 0; i < 5; i++)
+            {
+                if ((pms.pm2_atm[AVE_COUNT] > pm_array[i]) || (pms.hcho[AVE_COUNT] > hchi_array[i]))
+                {
+                    aqi_temp = i + 1;
+                }
+                else
+                {
+                    aqi_index = aqi_temp;
+                    break;
+                }
+            }
 
             cJSON *sensor_json = cJSON_CreateObject();
             cJSON_AddNumberToObject(sensor_json, "pm1", pms.pm1_atm[AVE_COUNT]);
@@ -75,7 +104,6 @@ static void publish_task(void *arg)
             cJSON_AddNumberToObject(sensor_json, "temp", pms.temp[AVE_COUNT]);
             cJSON_AddNumberToObject(sensor_json, "humi", pms.humi[AVE_COUNT]);
             cJSON_AddNumberToObject(sensor_json, "hcho", pms.hcho[AVE_COUNT]);
-            cJSON_AddStringToObject(sensor_json, "time", sysinfo.time_str);
             cJSON_AddNumberToObject(sensor_json, "run", sysinfo.time_run);
             char *out = cJSON_PrintUnformatted(sensor_json);
             strcpy(mqttinfo.content, out);
@@ -150,37 +178,40 @@ static void led_task(void *arg)
     const uint32_t pin_num[7] = {WIFI_LED_R, WIFI_LED_G, WIFI_LED_B, AQI_LED_R, AQI_LED_G, AQI_LED_B, FAN_PIN};
     uint32_t duties[7] = {0, 0, 0, 0, 0, 0, (int)(0.6 * 2600)};
     int16_t phase[7] = {0, 0, 0, 0, 0, 0, 0};
-    static bool wifi_on = false;
     pwm_init(2600, duties, 7, pin_num);
     pwm_set_channel_invert(0x3F);
     pwm_set_phases(phase);
     pwm_start();
-
+    bool flash = false;
     while (true)
     {
-        vTaskDelay(500 / portTICK_RATE_MS);
-        wifi_on = !wifi_on;
-        if (wifi_on)
+        flash = !flash;
+        if (flash)
         {
-            pwm_set_duty(0, 200 * 5);
-            pwm_set_duty(1, 200 * 5);
-            pwm_set_duty(2, 200 * 5);
-
-            pwm_set_duty(3, 255 * 5);
-            pwm_set_duty(4, 0 * 5);
-            pwm_set_duty(5, 255 * 5);
+            if (esp_mqtt_client_is_available(mqttclient))
+            {
+                pwm_set_duty(0, color[0][0] * 10);
+                pwm_set_duty(1, color[0][1] * 10);
+                pwm_set_duty(2, color[0][2] * 10);
+            }
+            else
+            {
+                pwm_set_duty(0, color[5][0] * 10);
+                pwm_set_duty(1, color[5][1] * 10);
+                pwm_set_duty(2, color[5][2] * 10);
+            }
         }
         else
         {
             pwm_set_duty(0, 0);
             pwm_set_duty(1, 0);
             pwm_set_duty(2, 0);
-
-            pwm_set_duty(3, 0);
-            pwm_set_duty(4, 0);
-            pwm_set_duty(5, 0);
         }
+        pwm_set_duty(3, color[aqi_index][0] * 10);
+        pwm_set_duty(4, color[aqi_index][1] * 10);
+        pwm_set_duty(5, color[aqi_index][2] * 10);
         pwm_start();
+        vTaskDelay(500 / portTICK_RATE_MS);
     }
     vTaskDelete(NULL);
 }
@@ -188,7 +219,7 @@ static void led_task(void *arg)
 void csro_airmon_init(void)
 {
     pub_sem = xSemaphoreCreateBinary();
-    xTaskCreate(publish_task, "publish_task", 2048, NULL, configMAX_PRIORITIES - 7, NULL);
+    xTaskCreate(receive_sensor_values_task, "receive_sensor_values_task", 2048, NULL, configMAX_PRIORITIES - 7, NULL);
     xTaskCreate(uart_event_task, "uart_event_task", 2048, NULL, configMAX_PRIORITIES - 8, NULL);
     xTaskCreate(led_task, "led_task", 2048, NULL, configMAX_PRIORITIES - 9, NULL);
 }
