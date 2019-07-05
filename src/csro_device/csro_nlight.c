@@ -2,9 +2,56 @@
 
 #ifdef NLIGHT
 
+#define KEY_01_NUM GPIO_NUM_0
+#define KEY_02_NUM GPIO_NUM_2
+#define KEY_03_NUM GPIO_NUM_13
+#define KEY_04_NUM GPIO_NUM_4
+#define KEY_05_NUM GPIO_NUM_12
+#define KEY_06_NUM GPIO_NUM_16
+#define GPIO_MASK ((1ULL << KEY_01_NUM) | (1ULL << KEY_02_NUM) | (1ULL << KEY_03_NUM) | (1ULL << KEY_04_NUM) | (1ULL << KEY_05_NUM) | (1ULL << KEY_06_NUM))
+
 int light_state[3];
 
-static void nlight_relay_led_task(void *pvParameters)
+static void nlight_key_task(void *args)
+{
+    static uint32_t holdtime[3];
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_INPUT;
+    io_conf.pin_bit_mask = GPIO_MASK;
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 1;
+    gpio_config(&io_conf);
+    while (true)
+    {
+        bool key_update = false;
+        int key_status[6] = {gpio_get_level(KEY_01_NUM), gpio_get_level(KEY_02_NUM), gpio_get_level(KEY_03_NUM), gpio_get_level(KEY_04_NUM), gpio_get_level(KEY_05_NUM), gpio_get_level(KEY_06_NUM)};
+        for (size_t i = 0; i < 3; i++)
+        {
+            if (key_status[2 * i] == 0 || key_status[2 * i + 1] == 0)
+            {
+                holdtime[i]++;
+                if (holdtime[i] == 3)
+                {
+                    light_state[i] = !light_state[i];
+                    key_update = true;
+                }
+            }
+            else
+            {
+                holdtime[i] = 0;
+            }
+        }
+        if (key_update)
+        {
+            csro_update_nlight_state();
+        }
+        vTaskDelay(20 / portTICK_RATE_MS);
+    }
+    vTaskDelete(NULL);
+}
+
+static void nlight_relay_led_task(void *args)
 {
     while (true)
     {
@@ -25,6 +72,7 @@ static void nlight_relay_led_task(void *pvParameters)
 void csro_nlight_init(void)
 {
     xTaskCreate(nlight_relay_led_task, "nlight_relay_led_task", 2048, NULL, configMAX_PRIORITIES - 8, NULL);
+    xTaskCreate(nlight_key_task, "nlight_key_task", 2048, NULL, configMAX_PRIORITIES - 6, NULL);
 }
 
 void csro_update_nlight_state(void)
@@ -37,7 +85,10 @@ void csro_update_nlight_state(void)
     free(out);
     cJSON_Delete(state_json);
     sprintf(mqttinfo.pub_topic, "csro/%s/%s/state", sysinfo.mac_str, sysinfo.dev_type);
-    esp_mqtt_client_publish(mqttclient, mqttinfo.pub_topic, mqttinfo.content, 0, 0, 1);
+    if (esp_mqtt_client_is_available(mqttclient))
+    {
+        esp_mqtt_client_publish(mqttclient, mqttinfo.pub_topic, mqttinfo.content, 0, 0, 1);
+    }
 }
 
 void csro_nlight_on_connect(esp_mqtt_event_handle_t event)

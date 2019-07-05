@@ -89,10 +89,10 @@ static void receive_sensor_values_task(void *arg)
                 if ((pms.pm2_atm[AVE_COUNT] > pm_array[i]) || (pms.hcho[AVE_COUNT] > hchi_array[i]))
                 {
                     aqi_temp = i + 1;
+                    aqi_index = aqi_temp;
                 }
                 else
                 {
-                    aqi_index = aqi_temp;
                     break;
                 }
             }
