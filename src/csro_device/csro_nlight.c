@@ -1,9 +1,10 @@
 #include "csro_devices.h"
+#include "csro_driver/aw9523b.h"
 
 #ifdef NLIGHT
 
 #define KEY_01_NUM GPIO_NUM_0
-#define KEY_02_NUM GPIO_NUM_2
+#define KEY_02_NUM GPIO_NUM_5
 #define KEY_03_NUM GPIO_NUM_13
 #define KEY_04_NUM GPIO_NUM_4
 #define KEY_05_NUM GPIO_NUM_12
@@ -53,17 +54,20 @@ static void nlight_key_task(void *args)
 
 static void nlight_relay_led_task(void *args)
 {
+    static uint8_t status[3];
     while (true)
     {
-        vTaskDelay(20 / portTICK_RATE_MS);
+        vTaskDelay(50 / portTICK_RATE_MS);
         for (size_t i = 0; i < 3; i++)
         {
-            if (light_state[i] == 1)
+            if (status[i] != light_state[i])
             {
+                status[i] = light_state[i];
+                csro_start_vibrator();
             }
-            else
-            {
-            }
+            csro_set_led(2 * i + 1, light_state[i] == 1 ? 128 : 0);
+            csro_set_led(2 * i + 2, light_state[i] == 1 ? 128 : 0);
+            csro_set_relay(1 + i, light_state[i] == 1 ? true : false);
         }
     }
     vTaskDelete(NULL);
@@ -71,6 +75,7 @@ static void nlight_relay_led_task(void *args)
 
 void csro_nlight_init(void)
 {
+    csro_aw9523b_init();
     xTaskCreate(nlight_relay_led_task, "nlight_relay_led_task", 2048, NULL, configMAX_PRIORITIES - 8, NULL);
     xTaskCreate(nlight_key_task, "nlight_key_task", 2048, NULL, configMAX_PRIORITIES - 6, NULL);
 }

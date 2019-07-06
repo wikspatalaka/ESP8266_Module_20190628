@@ -7,8 +7,11 @@
 #define I2C_MASTER_NUM I2C_NUM_0
 
 #if NLIGHT == 3
-uint8_t LED_REG_ADDR[] = {0x22, 0x20, 0x2C, 0x21, 0x23, 0x2D};
+uint8_t led_reg_addr[6] = {0x20, 0x2D, 0x21, 0x2C, 0x22, 0x23};
+uint8_t relay_off_value[4] = {0xFB, 0xF7, 0xEF, 0xDF};
 #endif
+
+TimerHandle_t vibrator_timer;
 
 void i2c_master_aw9523b_write(uint8_t reg_addr, uint8_t value)
 {
@@ -39,6 +42,13 @@ uint8_t i2c_master_aw9523b_read(uint8_t reg_addr)
     return data;
 }
 
+void vibrator_timer_callback(TimerHandle_t xTimer)
+{
+    uint8_t data = i2c_master_aw9523b_read(0x02);
+    data = data & 0xFC;
+    i2c_master_aw9523b_write(0x02, data);
+}
+
 void csro_aw9523b_init(void)
 {
     i2c_config_t conf;
@@ -51,13 +61,16 @@ void csro_aw9523b_init(void)
     i2c_param_config(I2C_MASTER_NUM, &conf);
 
     i2c_master_aw9523b_write(0x12, 0xFF); //set P0.0-p0.7 gpio mode for vibrator and relays
-    i2c_master_aw9523b_write(0x11, 0x10); //set P0.0-p0.7 gpio mode for vibrator and relays
+    i2c_master_aw9523b_write(0x11, 0x10); //set P0.0-p0.7 gpio mode push-pull
     i2c_master_aw9523b_write(0x13, 0x00); //set P1.0-p1.7 led mode for keyboard leds
+
+    vibrator_timer = xTimerCreate("vibrator_timer", 300 / portTICK_RATE_MS, pdFALSE, (void *)0, vibrator_timer_callback);
+    xTimerStart(vibrator_timer, portMAX_DELAY);
 }
 
 void csro_set_led(uint8_t led_num, uint8_t bright)
 {
-    i2c_master_aw9523b_write(LED_REG_ADDR[led_num - 1], bright);
+    i2c_master_aw9523b_write(led_reg_addr[led_num - 1], bright);
 }
 
 void csro_set_relay(uint8_t relay_num, uint8_t state)
@@ -69,29 +82,17 @@ void csro_set_relay(uint8_t relay_num, uint8_t state)
     }
     else
     {
-        switch (relay_num)
-        {
-        case 1:
-            data = data & 0xFB;
-            break;
-        case 2:
-            data = data & 0xF7;
-            break;
-        case 3:
-            data = data & 0xEF;
-            break;
-        case 4:
-            data = data & 0xDF;
-            break;
-        default:
-            break;
-        }
+        data = data & relay_off_value[relay_num - 1];
     }
     i2c_master_aw9523b_write(0x02, data);
 }
 
-void csro_set_vibrator(uint8_t period_ms)
+void csro_start_vibrator(void)
 {
+    uint8_t data = i2c_master_aw9523b_read(0x02);
+    data = data | 0x03;
+    i2c_master_aw9523b_write(0x02, data);
+    xTimerReset(vibrator_timer, portMAX_DELAY);
 }
 
 #endif
