@@ -9,6 +9,8 @@ void csro_mqtt_client_info(void)
 {
 #ifdef NLIGHT
     sprintf(sysinfo.dev_type, "nlight%d", NLIGHT);
+#elif defined NLIGHT_4K4R
+    sprintf(sysinfo.dev_type, "nlight4");
 #elif defined DLIGHT
     sprintf(sysinfo.dev_type, "dlight");
 #elif defined RGBLIGHT
