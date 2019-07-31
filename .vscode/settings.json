@@ -9,6 +9,8 @@
         "functional": "c",
         "system_error": "c",
         "csro_devices.h": "c",
-        "array": "c"
+        "array": "c",
+        "mqtt_client.h": "c",
+        "mqtt_config.h": "c"
     }
 }

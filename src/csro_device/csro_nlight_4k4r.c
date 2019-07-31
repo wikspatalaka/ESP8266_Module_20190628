@@ -14,7 +14,7 @@ int light_state[4] = {0, 0, 0, 0};
 
 void csro_update_nlight_4k4r_state(void)
 {
-    if (esp_mqtt_client_is_available(mqttclient))
+    if (mqttclient != NULL)
     {
         cJSON *state_json = cJSON_CreateObject();
         cJSON_AddItemToObject(state_json, "state", cJSON_CreateIntArray(light_state, 4));
@@ -42,13 +42,13 @@ static void nlight_4k4r_relay_led_task(void *args)
                 status[i] = light_state[i];
                 update = true;
             }
-            // csro_set_led(i, light_state[i] == 1 ? 128 : 32);
-            // csro_set_relay(i, light_state[i] == 1 ? true : false);
+            csro_set_led(i, light_state[i] == 1 ? 128 : 8);
+            csro_set_relay(i, light_state[i] == 1 ? true : false);
         }
         if (update)
         {
-            // csro_set_vibrator();
-            // csro_update_nlight_4k4r_state();
+            csro_set_vibrator();
+            csro_update_nlight_4k4r_state();
         }
     }
     vTaskDelete(NULL);
@@ -67,7 +67,6 @@ static void nlight_4k4r_key_task(void *args)
 
     while (true)
     {
-        bool update = false;
         int key_status[4] = {gpio_get_level(KEY_01_NUM), gpio_get_level(KEY_02_NUM), gpio_get_level(KEY_03_NUM), gpio_get_level(KEY_04_NUM)};
         for (size_t i = 0; i < 4; i++)
         {
@@ -77,17 +76,12 @@ static void nlight_4k4r_key_task(void *args)
                 if (holdtime[i] == 2)
                 {
                     light_state[i] = !light_state[i];
-                    update = true;
                 }
             }
             else
             {
                 holdtime[i] = 0;
             }
-        }
-        if (update)
-        {
-            csro_update_nlight_4k4r_state();
         }
         vTaskDelay(20 / portTICK_RATE_MS);
     }
@@ -103,7 +97,7 @@ void csro_nlight_4k4r_init(void)
 void csro_nlight_4k4r_on_connect(esp_mqtt_event_handle_t event)
 {
     sprintf(mqttinfo.sub_topic, "csro/%s/%s/set/#", sysinfo.mac_str, sysinfo.dev_type);
-    esp_mqtt_client_subscribe(event->client, mqttinfo.sub_topic, 1);
+    esp_mqtt_client_subscribe(event->client, mqttinfo.sub_topic, 0);
 
     for (size_t i = 0; i < 4; i++)
     {
@@ -126,7 +120,7 @@ void csro_nlight_4k4r_on_connect(esp_mqtt_event_handle_t event)
         cJSON_AddStringToObject(config_json, "opt", "false");
         cJSON_AddNumberToObject(config_json, "pl_on", 1);
         cJSON_AddNumberToObject(config_json, "pl_off", 0);
-        cJSON_AddNumberToObject(config_json, "qos", 1);
+        cJSON_AddNumberToObject(config_json, "qos", 0);
         char *out = cJSON_PrintUnformatted(config_json);
         strcpy(mqttinfo.content, out);
         free(out);
@@ -139,7 +133,6 @@ void csro_nlight_4k4r_on_connect(esp_mqtt_event_handle_t event)
 }
 void csro_nlight_4k4r_on_message(esp_mqtt_event_handle_t event)
 {
-    bool update = false;
     char topic[50];
     for (size_t i = 0; i < 4; i++)
     {
@@ -149,18 +142,12 @@ void csro_nlight_4k4r_on_message(esp_mqtt_event_handle_t event)
             if (strncmp("0", event->data, event->data_len) == 0)
             {
                 light_state[i] = 0;
-                update = true;
             }
             else if (strncmp("1", event->data, event->data_len) == 0)
             {
                 light_state[i] = 1;
-                update = true;
             }
         }
-    }
-    if (update)
-    {
-        csro_update_nlight_4k4r_state();
     }
 }
 
