@@ -6,6 +6,8 @@ void csro_device_init(void)
     csro_nlight_init();
 #elif defined NLIGHT_4K4R
     csro_nlight_4k4r_init();
+#elif defined NLIGHT_6K4R
+    csro_nlight_6k4r_init();
 #elif defined DLIGHT
     csro_dlight_init();
 #elif defined RGBLIGHT
@@ -23,6 +25,8 @@ void csro_device_on_connect(esp_mqtt_event_handle_t event)
     csro_nlight_on_connect(event);
 #elif defined NLIGHT_4K4R
     csro_nlight_4k4r_on_connect(event);
+#elif defined NLIGHT_6K4R
+    csro_nlight_6k4r_on_connect(event);
 #elif defined DLIGHT
     csro_dlight_on_connect(event);
 #elif defined RGBLIGHT
@@ -40,6 +44,8 @@ void csro_device_on_message(esp_mqtt_event_handle_t event)
     csro_nlight_on_message(event);
 #elif defined NLIGHT_4K4R
     csro_nlight_4k4r_on_message(event);
+#elif defined NLIGHT_6K4R
+    csro_nlight_6k4r_on_message(event);
 #elif defined DLIGHT
     csro_dlight_on_message(event);
 #elif defined RGBLIGHT

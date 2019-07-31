@@ -21,9 +21,10 @@
 #include "time.h"
 #include "cJSON.h"
 
-#define NLIGHT_4K4R
+#define NLIGHT_6K4R
 /* 
 #define NLIGHT_4K4R
+#define NLIGHT_6K4R
 #define NLIGHT 1
 #define DLIGHT 1
 #define RGBLIGHT 1

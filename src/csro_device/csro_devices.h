@@ -18,6 +18,11 @@ void csro_nlight_4k4r_init(void);
 void csro_nlight_4k4r_on_connect(esp_mqtt_event_handle_t event);
 void csro_nlight_4k4r_on_message(esp_mqtt_event_handle_t event);
 
+//csro_nlight_6k4r.c
+void csro_nlight_6k4r_init(void);
+void csro_nlight_6k4r_on_connect(esp_mqtt_event_handle_t event);
+void csro_nlight_6k4r_on_message(esp_mqtt_event_handle_t event);
+
 //csro_dlight.c
 void csro_dlight_init(void);
 void csro_dlight_on_connect(esp_mqtt_event_handle_t event);

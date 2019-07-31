@@ -1,18 +1,19 @@
 #include "csro_devices.h"
 #include "csro_driver/aw9523b.h"
 
-#ifdef NLIGHT_4K4R
+#ifdef NLIGHT_6K4R
 
 #define KEY_01_NUM GPIO_NUM_0
-#define KEY_02_NUM GPIO_NUM_4
+#define KEY_02_NUM GPIO_NUM_5
 #define KEY_03_NUM GPIO_NUM_13
-#define KEY_04_NUM GPIO_NUM_5
-#define KEY_IR_NUM GPIO_NUM_12
-#define GPIO_MASK ((1ULL << KEY_01_NUM) | (1ULL << KEY_02_NUM) | (1ULL << KEY_03_NUM) | (1ULL << KEY_04_NUM) | (1ULL << KEY_IR_NUM))
+#define KEY_04_NUM GPIO_NUM_4
+#define KEY_05_NUM GPIO_NUM_12
+#define KEY_06_NUM GPIO_NUM_16
+#define GPIO_MASK ((1ULL << KEY_01_NUM) | (1ULL << KEY_02_NUM) | (1ULL << KEY_03_NUM) | (1ULL << KEY_04_NUM) | (1ULL << KEY_05_NUM) | (1ULL << KEY_06_NUM))
 
 int light_state[4] = {0, 0, 0, 0};
 
-void csro_update_nlight_4k4r_state(void)
+void csro_update_nlight_6k4r_state(void)
 {
     if (mqttclient != NULL)
     {
@@ -28,7 +29,7 @@ void csro_update_nlight_4k4r_state(void)
     }
 }
 
-static void nlight_4k4r_relay_led_task(void *args)
+static void nlight_6k4r_relay_led_task(void *args)
 {
     static uint8_t status[4];
     while (true)
@@ -45,18 +46,20 @@ static void nlight_4k4r_relay_led_task(void *args)
             csro_set_led(i, light_state[i] == 1 ? 128 : 8);
             csro_set_relay(i, light_state[i] == 1 ? true : false);
         }
+        csro_set_led(4, 8);
+        csro_set_led(5, 8);
         if (update)
         {
             csro_set_vibrator();
-            csro_update_nlight_4k4r_state();
+            csro_update_nlight_6k4r_state();
         }
     }
     vTaskDelete(NULL);
 }
 
-static void nlight_4k4r_key_task(void *args)
+static void nlight_6k4r_key_task(void *args)
 {
-    static uint32_t holdtime[4];
+    static uint32_t holdtime[6];
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_INPUT;
@@ -67,7 +70,7 @@ static void nlight_4k4r_key_task(void *args)
 
     while (true)
     {
-        int key_status[4] = {gpio_get_level(KEY_01_NUM), gpio_get_level(KEY_02_NUM), gpio_get_level(KEY_03_NUM), gpio_get_level(KEY_04_NUM)};
+        int key_status[6] = {gpio_get_level(KEY_01_NUM), gpio_get_level(KEY_02_NUM), gpio_get_level(KEY_03_NUM), gpio_get_level(KEY_04_NUM), gpio_get_level(KEY_05_NUM), gpio_get_level(KEY_06_NUM)};
         for (size_t i = 0; i < 4; i++)
         {
             if (key_status[i] == 0)
@@ -83,18 +86,51 @@ static void nlight_4k4r_key_task(void *args)
                 holdtime[i] = 0;
             }
         }
+
+        if (key_status[4] == 0)
+        {
+            holdtime[4]++;
+            if (holdtime[4] == 2)
+            {
+                light_state[0] = 1;
+                light_state[1] = 1;
+                light_state[2] = 1;
+                light_state[3] = 1;
+            }
+        }
+        else
+        {
+            holdtime[4] = 0;
+        }
+
+        if (key_status[5] == 0)
+        {
+            holdtime[5]++;
+            if (holdtime[5] == 2)
+            {
+                light_state[0] = 0;
+                light_state[1] = 0;
+                light_state[2] = 0;
+                light_state[3] = 0;
+            }
+        }
+        else
+        {
+            holdtime[5] = 0;
+        }
+
         vTaskDelay(20 / portTICK_RATE_MS);
     }
     vTaskDelete(NULL);
 }
 
-void csro_nlight_4k4r_init(void)
+void csro_nlight_6k4r_init(void)
 {
     csro_aw9523b_init();
-    xTaskCreate(nlight_4k4r_relay_led_task, "nlight_4k4r_relay_led_task", 2048, NULL, configMAX_PRIORITIES - 8, NULL);
-    xTaskCreate(nlight_4k4r_key_task, "nlight_4k4r_key_task", 2048, NULL, configMAX_PRIORITIES - 6, NULL);
+    xTaskCreate(nlight_6k4r_relay_led_task, "nlight_6k4r_relay_led_task", 2048, NULL, configMAX_PRIORITIES - 8, NULL);
+    xTaskCreate(nlight_6k4r_key_task, "nlight_6k4r_key_task", 2048, NULL, configMAX_PRIORITIES - 6, NULL);
 }
-void csro_nlight_4k4r_on_connect(esp_mqtt_event_handle_t event)
+void csro_nlight_6k4r_on_connect(esp_mqtt_event_handle_t event)
 {
     sprintf(mqttinfo.sub_topic, "csro/%s/%s/set/#", sysinfo.mac_str, sysinfo.dev_type);
     esp_mqtt_client_subscribe(event->client, mqttinfo.sub_topic, 0);
@@ -129,9 +165,9 @@ void csro_nlight_4k4r_on_connect(esp_mqtt_event_handle_t event)
     }
     sprintf(mqttinfo.pub_topic, "csro/%s/%s/available", sysinfo.mac_str, sysinfo.dev_type);
     esp_mqtt_client_publish(event->client, mqttinfo.pub_topic, "online", 0, 0, 1);
-    csro_update_nlight_4k4r_state();
+    csro_update_nlight_6k4r_state();
 }
-void csro_nlight_4k4r_on_message(esp_mqtt_event_handle_t event)
+void csro_nlight_6k4r_on_message(esp_mqtt_event_handle_t event)
 {
     char topic[50];
     for (size_t i = 0; i < 4; i++)
