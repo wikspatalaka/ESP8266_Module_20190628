@@ -1,5 +1,7 @@
 #include "aw9523b.h"
 
+#ifndef AIR_MONITOR
+
 #define I2C_MASTER_SCL_IO 2
 #define I2C_MASTER_SDA_IO 14
 #define I2C_MASTER_NUM I2C_NUM_0
@@ -104,3 +106,5 @@ void csro_set_vibrator(void)
     i2c_master_aw9523b_write(0x02, data);
     xTimerReset(vibrator_timer, portMAX_DELAY);
 }
+
+#endif

@@ -12,7 +12,7 @@
 #define AQI_LED_B 13
 #define FAN_PIN 15
 #define BTN_PIN 0
-#define AVE_COUNT 5
+#define AVE_COUNT 60
 
 #define BLUE 0, 0, 255
 #define GREEN 0, 255, 0
@@ -110,7 +110,7 @@ static void receive_sensor_values_task(void *arg)
             free(out);
             cJSON_Delete(sensor_json);
             sprintf(mqttinfo.pub_topic, "csro/%s/%s/state", sysinfo.mac_str, sysinfo.dev_type);
-            if (esp_mqtt_client_is_available(mqttclient))
+            if (mqttclient != NULL)
             {
                 esp_mqtt_client_publish(mqttclient, mqttinfo.pub_topic, mqttinfo.content, 0, 0, 1);
             }
@@ -188,7 +188,7 @@ static void led_task(void *arg)
         flash = !flash;
         if (flash)
         {
-            if (esp_mqtt_client_is_available(mqttclient))
+            if (mqttclient != NULL)
             {
                 pwm_set_duty(0, color[0][0] * 10);
                 pwm_set_duty(1, color[0][1] * 10);
