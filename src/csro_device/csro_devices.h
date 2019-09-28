@@ -38,4 +38,9 @@ void csro_airmon_init(void);
 void csro_airmon_on_connect(esp_mqtt_event_handle_t event);
 void csro_airmon_on_message(esp_mqtt_event_handle_t event);
 
+//csro_motor_4k4r.c
+void csro_motor_4k4r_init(void);
+void csro_motor_4k4r_on_connect(esp_mqtt_event_handle_t event);
+void csro_motor_4k4r_on_message(esp_mqtt_event_handle_t event);
+
 #endif

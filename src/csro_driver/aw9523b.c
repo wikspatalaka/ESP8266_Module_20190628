@@ -14,6 +14,14 @@ uint8_t vibrator_on_value = 0x01;
 uint8_t vibrator_off_value = 0xFE;
 #endif
 
+#ifdef MOTOR_4K4R
+uint8_t led_reg_addr[4] = {0x21, 0x2C, 0x20, 0x2D};
+uint8_t relay_on_value[4] = {0x04, 0x08, 0x10, 0x20};
+uint8_t relay_off_value[4] = {0xFB, 0xF7, 0xEF, 0xDF};
+uint8_t vibrator_on_value = 0x01;
+uint8_t vibrator_off_value = 0xFE;
+#endif
+
 #ifdef NLIGHT_6K4R
 uint8_t led_reg_addr[6] = {0x20, 0x2D, 0x21, 0x2C, 0x22, 0x23};
 uint8_t relay_on_value[4] = {0x04, 0x08, 0x10, 0x20};
@@ -22,7 +30,8 @@ uint8_t vibrator_on_value = 0x03;
 uint8_t vibrator_off_value = 0xFC;
 #endif
 
-TimerHandle_t vibrator_timer;
+static TimerHandle_t vibrator_timer;
+static SemaphoreHandle_t i2c_mutex;
 
 static void i2c_master_aw9523b_write(uint8_t reg_addr, uint8_t value)
 {
@@ -78,33 +87,46 @@ void csro_aw9523b_init(void)
 
     vibrator_timer = xTimerCreate("vibrator_timer", 130 / portTICK_RATE_MS, pdFALSE, (void *)0, vibrator_timer_callback);
     xTimerStart(vibrator_timer, portMAX_DELAY);
+    i2c_mutex = xSemaphoreCreateMutex();
 }
 
 void csro_set_led(uint8_t led_num, uint8_t bright)
 {
-    i2c_master_aw9523b_write(led_reg_addr[led_num], bright);
+    if (xSemaphoreTake(i2c_mutex, portMAX_DELAY) == pdTRUE)
+    {
+        i2c_master_aw9523b_write(led_reg_addr[led_num], bright);
+        xSemaphoreGive(i2c_mutex);
+    }
 }
 
 void csro_set_relay(uint8_t relay_num, uint8_t state)
 {
-    uint8_t data = i2c_master_aw9523b_read(0x02);
-    if (state == true)
+    if (xSemaphoreTake(i2c_mutex, portMAX_DELAY) == pdTRUE)
     {
-        data = data | relay_on_value[relay_num];
+        uint8_t data = i2c_master_aw9523b_read(0x02);
+        if (state == true)
+        {
+            data = data | relay_on_value[relay_num];
+        }
+        else
+        {
+            data = data & relay_off_value[relay_num];
+        }
+        i2c_master_aw9523b_write(0x02, data);
+        xSemaphoreGive(i2c_mutex);
     }
-    else
-    {
-        data = data & relay_off_value[relay_num];
-    }
-    i2c_master_aw9523b_write(0x02, data);
 }
 
 void csro_set_vibrator(void)
 {
-    uint8_t data = i2c_master_aw9523b_read(0x02);
-    data = data | vibrator_on_value;
-    i2c_master_aw9523b_write(0x02, data);
-    xTimerReset(vibrator_timer, portMAX_DELAY);
+    if (xSemaphoreTake(i2c_mutex, portMAX_DELAY) == pdTRUE)
+    {
+        uint8_t data = i2c_master_aw9523b_read(0x02);
+        data = data | vibrator_on_value;
+        i2c_master_aw9523b_write(0x02, data);
+        xTimerReset(vibrator_timer, portMAX_DELAY);
+        xSemaphoreGive(i2c_mutex);
+    }
 }
 
 #endif

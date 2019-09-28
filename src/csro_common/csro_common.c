@@ -17,8 +17,8 @@ void csro_mqtt_client_info(void)
     sprintf(sysinfo.dev_type, "dlight");
 #elif defined RGBLIGHT
     sprintf(sysinfo.dev_type, "rgblight");
-#elif defined MOTOR
-    sprintf(sysinfo.dev_type, "motor%d", MOTOR);
+#elif defined MOTOR_4K4R
+    sprintf(sysinfo.dev_type, "motor2");
 #elif defined AIR_MONITOR
     sprintf(sysinfo.dev_type, "airmon");
 #endif
