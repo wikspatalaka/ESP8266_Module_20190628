@@ -21,7 +21,7 @@
 #include "time.h"
 #include "cJSON.h"
 
-#define AIR_MONITOR
+#define NLIGHT_4K4R
 /* 
 #define NLIGHT_4K4R
 #define NLIGHT_6K4R
