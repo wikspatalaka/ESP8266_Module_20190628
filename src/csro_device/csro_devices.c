@@ -12,8 +12,8 @@ void csro_device_init(void)
     csro_dlight_init();
 #elif defined RGBLIGHT
     csro_rgblight_init();
-#elif defined MOTOR
-    csro_motor_init();
+#elif defined MOTOR_4K4R
+    csro_motor_4k4r_init();
 #elif defined AIR_MONITOR
     csro_airmon_init();
 #endif
@@ -31,8 +31,8 @@ void csro_device_on_connect(esp_mqtt_event_handle_t event)
     csro_dlight_on_connect(event);
 #elif defined RGBLIGHT
     csro_rgblight_on_connect(event);
-#elif defined MOTOR
-    csro_motor_on_connect(event);
+#elif defined MOTOR_4K4R
+    csro_motor_4k4r_on_connect(event);
 #elif defined AIR_MONITOR
     csro_airmon_on_connect(event);
 #endif
@@ -50,8 +50,8 @@ void csro_device_on_message(esp_mqtt_event_handle_t event)
     csro_dlight_on_message(event);
 #elif defined RGBLIGHT
     csro_rgblight_on_message(event);
-#elif defined MOTOR
-    csro_motor_on_message(event);
+#elif defined MOTOR_4K4R
+    csro_motor_4k4r_on_message(event);
 #elif defined AIR_MONITOR
     csro_airmon_on_message(event);
 #endif
