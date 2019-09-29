@@ -30,6 +30,14 @@ uint8_t vibrator_on_value = 0x03;
 uint8_t vibrator_off_value = 0xFC;
 #endif
 
+#ifdef RGBLIGHT
+uint8_t led_reg_addr[6] = {0x20, 0x2D, 0x21, 0x2C, 0x22, 0x23};
+uint8_t relay_on_value[4] = {0x04, 0x08, 0x10, 0x20};
+uint8_t relay_off_value[4] = {0xFB, 0xF7, 0xEF, 0xDF};
+uint8_t vibrator_on_value = 0x03;
+uint8_t vibrator_off_value = 0xFC;
+#endif
+
 static TimerHandle_t vibrator_timer;
 static SemaphoreHandle_t i2c_mutex;
 
