@@ -8,11 +8,6 @@
 #define KEY_03_NUM GPIO_NUM_13
 #define KEY_04_NUM GPIO_NUM_5
 #define KEY_IR_NUM GPIO_NUM_12
-#define MOTOR1_UP_RELAY 1
-#define MOTOR1_DOWN_RELAY 2
-#define MOTOR2_UP_RELAY 3
-#define MOTOR2_DOWN_RELAY 4
-
 #define GPIO_MASK ((1ULL << KEY_01_NUM) | (1ULL << KEY_02_NUM) | (1ULL << KEY_03_NUM) | (1ULL << KEY_04_NUM) | (1ULL << KEY_IR_NUM))
 
 typedef enum
@@ -22,9 +17,8 @@ typedef enum
     DOWN = 2,
 } motor_state;
 
-motor_state motor[2] = {STOP};
+motor_state motor[2] = {STOP, STOP};
 int action[2] = {UP, UP};
-uint8_t relay_index[4] = {MOTOR1_UP_RELAY, MOTOR2_UP_RELAY, MOTOR1_DOWN_RELAY, MOTOR2_DOWN_RELAY};
 
 void csro_update_motor_4k4r_state(void)
 {
@@ -44,8 +38,8 @@ void csro_update_motor_4k4r_state(void)
 
 static void motor_4k4r_relay_led_task(void *args)
 {
-    static motor_state last_state[2] = {STOP};
-    static uint16_t count_200ms[2] = {0};
+    static motor_state last_state[2] = {STOP, STOP};
+    static uint16_t count_200ms[2] = {0, 0};
     while (true)
     {
         bool update = false;
@@ -68,9 +62,8 @@ static void motor_4k4r_relay_led_task(void *args)
             }
             csro_set_led(i, last_state[i] == UP ? 128 : 8);
             csro_set_led(i + 2, last_state[i] == DOWN ? 128 : 8);
-
-            csro_set_relay(relay_index[i], last_state[i] == UP ? true : false);
-            csro_set_relay(relay_index[i + 2], last_state[i] == DOWN ? true : false);
+            csro_set_relay(2 * i, last_state[i] == UP ? true : false);
+            csro_set_relay(2 * i + 1, last_state[i] == DOWN ? true : false);
             if (motor[i] != STOP)
             {
                 count_200ms[i]++;
@@ -120,23 +113,27 @@ static void motor_4k4r_key_task(void *args)
         }
         if (holdtime[0] == 2)
         {
-            motor_state state = motor[1];
-            motor[1] = (state == STOP) ? UP : STOP;
+            printf("KEY1\r\n");
+            motor_state state = motor[0];
+            motor[0] = (state == STOP) ? UP : STOP;
         }
         else if (holdtime[2] == 2)
         {
-            motor_state state = motor[1];
-            motor[1] = (state == STOP) ? DOWN : STOP;
+            printf("KEY3\r\n");
+            motor_state state = motor[0];
+            motor[0] = (state == STOP) ? DOWN : STOP;
         }
         if (holdtime[1] == 2)
         {
-            motor_state state = motor[2];
-            motor[2] = (state == STOP) ? UP : STOP;
+            printf("KEY2\r\n");
+            motor_state state = motor[1];
+            motor[1] = (state == STOP) ? UP : STOP;
         }
         else if (holdtime[3] == 2)
         {
-            motor_state state = motor[2];
-            motor[2] = (state == STOP) ? DOWN : STOP;
+            printf("KEY4\r\n");
+            motor_state state = motor[1];
+            motor[1] = (state == STOP) ? DOWN : STOP;
         }
         vTaskDelay(20 / portTICK_RATE_MS);
     }
@@ -200,7 +197,8 @@ void csro_motor_4k4r_on_message(esp_mqtt_event_handle_t event)
         {
             if (strncmp("up", event->data, event->data_len) == 0)
             {
-                motor[i] = UP;
+                motor_state state = motor[i];
+                motor[i] = (state == STOP) ? UP : STOP;
             }
             else if (strncmp("stop", event->data, event->data_len) == 0)
             {
@@ -208,7 +206,8 @@ void csro_motor_4k4r_on_message(esp_mqtt_event_handle_t event)
             }
             else if (strncmp("down", event->data, event->data_len) == 0)
             {
-                motor[i] = DOWN;
+                motor_state state = motor[i];
+                motor[i] = (state == STOP) ? DOWN : STOP;
             }
         }
     }

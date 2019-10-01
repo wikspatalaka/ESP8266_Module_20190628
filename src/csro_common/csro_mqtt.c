@@ -121,9 +121,6 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 
 void csro_start_mqtt(void)
 {
-    xTaskCreate(time_stamp_task, "time_stamp_task", 2048, NULL, configMAX_PRIORITIES - 10, NULL);
-    xTaskCreate(udp_server_task, "udp_server_task", 2048, NULL, configMAX_PRIORITIES - 7, NULL);
-
     csro_mqtt_client_info();
     tcpip_adapter_init();
     esp_event_loop_init(wifi_event_handler, NULL);
@@ -138,4 +135,6 @@ void csro_start_mqtt(void)
     esp_wifi_set_mode(WIFI_MODE_STA);
     esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
     esp_wifi_start();
+    xTaskCreate(time_stamp_task, "time_stamp_task", 2048, NULL, configMAX_PRIORITIES - 10, NULL);
+    xTaskCreate(udp_server_task, "udp_server_task", 2048, NULL, configMAX_PRIORITIES - 7, NULL);
 }
