@@ -165,6 +165,7 @@ void csro_motor_4k4r_on_connect(esp_mqtt_event_handle_t event)
 
         cJSON *config_json = cJSON_CreateObject();
         cJSON_AddStringToObject(config_json, "~", prefix);
+        cJSON_AddStringToObject(config_json, "unique_id", name);
         cJSON_AddStringToObject(config_json, "name", name);
         cJSON_AddStringToObject(config_json, "cmd_t", command);
         cJSON_AddStringToObject(config_json, "stat_t", "~/state");
